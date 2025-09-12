@@ -10,15 +10,7 @@ paths:
     source: rtsp://admin:@192.168.1.11:554/stream2
     sourceOnDemand: false
     rtspTransport: tcp
-  cam107:
+  ca:
     source: rtsp://admin:@192.168.1.107:554/stream1
-    sourceOnDemand: false
-    rtspTransport: tcp
-  cam11:
-    source: rtsp://admin:@192.168.1.11:554/stream2
-    sourceOnDemand: false
-    rtspTransport: tcp
-  cong:
-    source: rtsp://admin:@192.168.1.107:554/stream2
     sourceOnDemand: false
     rtspTransport: tcp

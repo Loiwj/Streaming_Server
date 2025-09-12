@@ -54,6 +54,10 @@
           <span>📋</span>
           <span>Danh sách</span>
         </button>
+        <button id="record-history-btn" class="control-btn">
+          <span>📼</span>
+          <span>Lịch sử ghi</span>
+        </button>
         <button id="settings-btn" class="control-btn">
           <span>⚙️</span>
           <span>Cài đặt</span>
@@ -154,6 +158,42 @@
     </div>
   </div>
 
+
+  <!-- Record History Modal -->
+  <div id="record-history-modal" class="modal" style="display: none;">
+    <div class="modal-content modal-large">
+      <div class="modal-header">
+        <h3>📼 Lịch sử Ghi hình</h3>
+        <button id="close-history-modal" class="close-btn">×</button>
+      </div>
+      <div class="modal-body">
+        <div class="history-toolbar">
+          <div class="history-stats">
+            <span>Tổng video: <strong id="history-count">0</strong></span>
+            <span>Dung lượng: <strong id="history-size">0 MB</strong></span>
+          </div>
+          <div class="history-actions">
+            <button id="select-folder-btn" class="action-btn" style="background: #8b5cf6;">📂 Chọn thư mục</button>
+            <button id="export-history-btn" class="action-btn">📥 Tải tất cả</button>
+            <button id="clear-history-btn" class="action-btn secondary">🗑️ Xóa lịch sử</button>
+          </div>
+        </div>
+        
+        <div class="history-info" id="history-info" style="margin-bottom: 1rem; padding: 0.75rem; background: #f7fafc; border-radius: 6px; font-size: 0.875rem; color: #4a5568;">
+          <span id="folder-info-history">💡 Nhấn "📂 Chọn thư mục" để chọn nơi lưu file, hoặc nhấn "💾 Tải xuống" để chọn từng file</span>
+        </div>
+        
+        <div class="history-list" id="history-list">
+          <div class="empty-state">
+            <div class="empty-state-icon">📼</div>
+            <p>Chưa có video nào trong lịch sử</p>
+            <small>Các video đã ghi sẽ được lưu ở đây</small>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <!-- Settings Modal -->
   <div id="settings-modal" class="modal" style="display: none;">
     <div class="modal-content">
@@ -177,6 +217,26 @@
             <option value="timestamp">camera-X-timestamp</option>
             <option value="simple">camera-X-video-N</option>
           </select>
+        </div>
+        
+        <div class="setting-section">
+          <h4>🎥 Cài đặt Record Video</h4>
+          <div class="setting-item">
+            <label for="record-storage">Nơi lưu video record:</label>
+            <select id="record-storage">
+              <option value="download">Tải về thư mục Downloads</option>
+              <option value="folder">Lưu vào thư mục đã chọn</option>
+              <option value="upload">Tự động upload lên server</option>
+            </select>
+          </div>
+          
+          <div class="setting-item">
+            <label>
+              <input type="checkbox" id="auto-upload-recordings">
+              Tự động upload video record lên server sau khi hoàn thành
+            </label>
+            <small class="help-text">💡 Video sẽ được lưu vào server và có thể quản lý qua "Quản lý File"</small>
+          </div>
         </div>
       </div>
     </div>

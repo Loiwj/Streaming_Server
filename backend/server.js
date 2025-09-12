@@ -3,6 +3,7 @@ const fs = require('fs').promises;
 const path = require('path');
 const yaml = require('js-yaml');
 const cors = require('cors');
+const multer = require('multer');
 
 const app = express();
 const PORT = 3001;
@@ -10,6 +11,58 @@ const PORT = 3001;
 // Middleware
 app.use(cors());
 app.use(express.json());
+
+// Configure Multer for file uploads
+const storage = multer.diskStorage({
+  destination: function (req, file, cb) {
+    // Determine destination based on file type
+    const isVideo = file.mimetype.startsWith('video/');
+    const isImage = file.mimetype.startsWith('image/');
+    
+    let uploadPath;
+    if (isVideo) {
+      uploadPath = path.join(__dirname, '../uploads/videos');
+    } else if (isImage) {
+      uploadPath = path.join(__dirname, '../uploads/images');
+    } else {
+      uploadPath = path.join(__dirname, '../uploads');
+    }
+    
+    cb(null, uploadPath);
+  },
+  filename: function (req, file, cb) {
+    // Generate unique filename with timestamp
+    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+    const fileExtension = path.extname(file.originalname);
+    const baseName = path.basename(file.originalname, fileExtension);
+    cb(null, baseName + '-' + uniqueSuffix + fileExtension);
+  }
+});
+
+// File filter to allow only videos and images
+const fileFilter = (req, file, cb) => {
+  const allowedTypes = /jpeg|jpg|png|gif|mp4|avi|mov|wmv|flv|webm|mkv/;
+  const extname = allowedTypes.test(path.extname(file.originalname).toLowerCase());
+  const mimetype = allowedTypes.test(file.mimetype);
+  
+  if (mimetype && extname) {
+    return cb(null, true);
+  } else {
+    cb(new Error('Chỉ cho phép tải lên file video (mp4, avi, mov, wmv, flv, webm, mkv) và hình ảnh (jpeg, jpg, png, gif)!'));
+  }
+};
+
+// Configure multer
+const upload = multer({
+  storage: storage,
+  limits: {
+    fileSize: 100 * 1024 * 1024, // 100MB limit
+  },
+  fileFilter: fileFilter
+});
+
+// Serve uploaded files statically
+app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
 
 // Path to MediaMTX config file
 const MEDIAMTX_CONFIG_PATH = path.join(__dirname, '../media-server/mediamtx.yml');
@@ -186,6 +239,169 @@ app.post('/api/mediamtx/restart', async (req, res) => {
     });
   } catch (error) {
     res.status(500).json({ error: 'Failed to restart MediaMTX' });
+  }
+});
+
+// File upload endpoints
+
+// Upload single file (video or image)
+app.post('/api/upload/single', upload.single('file'), (req, res) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({ error: 'Không có file nào được tải lên' });
+    }
+
+    const fileInfo = {
+      success: true,
+      message: 'File đã được tải lên thành công',
+      file: {
+        originalName: req.file.originalname,
+        filename: req.file.filename,
+        path: req.file.path,
+        size: req.file.size,
+        mimetype: req.file.mimetype,
+        url: `/uploads/${req.file.mimetype.startsWith('video/') ? 'videos' : 'images'}/${req.file.filename}`
+      }
+    };
+
+    console.log('✅ File uploaded successfully:', fileInfo);
+    res.json(fileInfo);
+
+  } catch (error) {
+    console.error('❌ Error uploading file:', error);
+    res.status(500).json({ 
+      error: 'Lỗi khi tải file lên', 
+      details: error.message 
+    });
+  }
+});
+
+// Upload multiple files
+app.post('/api/upload/multiple', upload.array('files', 10), (req, res) => {
+  try {
+    if (!req.files || req.files.length === 0) {
+      return res.status(400).json({ error: 'Không có file nào được tải lên' });
+    }
+
+    const filesInfo = req.files.map(file => ({
+      originalName: file.originalname,
+      filename: file.filename,
+      path: file.path,
+      size: file.size,
+      mimetype: file.mimetype,
+      url: `/uploads/${file.mimetype.startsWith('video/') ? 'videos' : 'images'}/${file.filename}`
+    }));
+
+    const response = {
+      success: true,
+      message: `${req.files.length} file(s) đã được tải lên thành công`,
+      files: filesInfo
+    };
+
+    console.log('✅ Multiple files uploaded successfully:', response);
+    res.json(response);
+
+  } catch (error) {
+    console.error('❌ Error uploading multiple files:', error);
+    res.status(500).json({ 
+      error: 'Lỗi khi tải nhiều file lên', 
+      details: error.message 
+    });
+  }
+});
+
+// Get list of uploaded files
+app.get('/api/files/:type?', async (req, res) => {
+  try {
+    const { type } = req.params; // 'videos', 'images', or undefined for all
+    
+    let directories = [];
+    if (type === 'videos') {
+      directories = [path.join(__dirname, '../uploads/videos')];
+    } else if (type === 'images') {
+      directories = [path.join(__dirname, '../uploads/images')];
+    } else {
+      directories = [
+        path.join(__dirname, '../uploads/videos'),
+        path.join(__dirname, '../uploads/images')
+      ];
+    }
+
+    const allFiles = [];
+    
+    for (const dir of directories) {
+      try {
+        const files = await fs.readdir(dir);
+        const fileType = dir.includes('videos') ? 'video' : 'image';
+        
+        for (const file of files) {
+          const filePath = path.join(dir, file);
+          const stats = await fs.stat(filePath);
+          
+          allFiles.push({
+            name: file,
+            type: fileType,
+            size: stats.size,
+            created: stats.birthtime,
+            modified: stats.mtime,
+            url: `/uploads/${fileType}s/${file}`
+          });
+        }
+      } catch (dirError) {
+        console.warn(`Directory ${dir} not accessible:`, dirError.message);
+      }
+    }
+
+    // Sort by creation date (newest first)
+    allFiles.sort((a, b) => new Date(b.created) - new Date(a.created));
+
+    res.json({
+      success: true,
+      files: allFiles,
+      count: allFiles.length
+    });
+
+  } catch (error) {
+    console.error('❌ Error listing files:', error);
+    res.status(500).json({ 
+      error: 'Lỗi khi lấy danh sách file', 
+      details: error.message 
+    });
+  }
+});
+
+// Delete uploaded file
+app.delete('/api/files/:type/:filename', async (req, res) => {
+  try {
+    const { type, filename } = req.params;
+    
+    if (!['videos', 'images'].includes(type)) {
+      return res.status(400).json({ error: 'Type phải là "videos" hoặc "images"' });
+    }
+
+    const filePath = path.join(__dirname, `../uploads/${type}/${filename}`);
+    
+    // Check if file exists
+    try {
+      await fs.access(filePath);
+    } catch (error) {
+      return res.status(404).json({ error: 'File không tồn tại' });
+    }
+
+    // Delete the file
+    await fs.unlink(filePath);
+
+    res.json({
+      success: true,
+      message: `File ${filename} đã được xóa thành công`
+    });
+
+  } catch (error) {
+    console.error('❌ Error deleting file:', error);
+    res.status(500).json({ 
+      error: 'Lỗi khi xóa file', 
+      details: error.message 
+    });
   }
 });
 
