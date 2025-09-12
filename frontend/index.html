@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Onxy VMS - Video Management System</title>
+  <link rel="stylesheet" href="./index.css">
+</head>
+<body>
+  <!-- Main Layout -->
+  <div class="main-layout">
+    <!-- Left Sidebar -->
+    <div class="sidebar">
+      <!-- Sidebar Header -->
+      <div class="sidebar-header">
+        <div class="logo">
+          <span>Onxy VMS</span>
+        </div>
+        <div class="status-indicator">
+          <div class="status-dot"></div>
+          <span>Live</span>
+        </div>
+      </div>
+
+      <!-- Sidebar Tabs -->
+      <div class="sidebar-tabs">
+        <button class="tab active">Device</button>
+        <button class="tab">Group</button>
+      </div>
+
+      <!-- Search -->
+      <div class="search-container">
+        <input type="text" class="search-box" placeholder="Alias, channel, IP, MAC">
+      </div>
+
+      <!-- Device List -->
+      <div class="device-list">
+        <div class="device-group">
+          <div class="group-header">
+            <span class="group-toggle">▼</span>
+            <span>Default area</span>
+          </div>
+          <div id="device-items">
+            <!-- Devices will be populated dynamically -->
+          </div>
+        </div>
+      </div>
+
+      <!-- Sidebar Controls -->
+      <div class="sidebar-controls">
+        <button id="add-camera-btn" class="control-btn">
+          <span>➕</span>
+          <span>Thêm Camera</span>
+        </button>
+        <button id="camera-list-btn" class="control-btn">
+          <span>📋</span>
+          <span>Danh sách</span>
+        </button>
+        <button id="settings-btn" class="control-btn">
+          <span>⚙️</span>
+          <span>Cài đặt</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- Main Content -->
+    <div class="main-content">
+      <!-- Top Toolbar -->
+      <div class="top-toolbar">
+        <div class="grid-controls">
+          <button id="grid-1x1" class="grid-btn active" data-grid="1">1x1</button>
+          <button id="grid-2x2" class="grid-btn" data-grid="2">2x2</button>
+          <button id="grid-3x3" class="grid-btn" data-grid="3">3x3</button>
+          <button id="grid-4x4" class="grid-btn" data-grid="4">4x4</button>
+        </div>
+        
+        <div class="toolbar-right">
+          <button class="toolbar-btn">
+            <span>📷</span>
+            <span>Snapshot</span>
+          </button>
+          <button class="toolbar-btn">
+            <span>🔍</span>
+            <span>PTZ</span>
+          </button>
+          <span class="page-indicator">1/1</span>
+          <button class="toolbar-btn">
+            <span>⏭️</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Video Container -->
+      <div class="video-container">
+        <div id="camera-grid" class="camera-grid grid-1x1">
+          <!-- Grid slots will be populated dynamically -->
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Add Camera Modal -->
+  <div id="add-camera-modal" class="modal" style="display: none;">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3>➕ Thêm Camera Mới</h3>
+        <button id="close-add-modal" class="close-btn">×</button>
+      </div>
+      <div class="modal-body">
+        <div class="form-group">
+          <label for="camera-name">Tên Camera:</label>
+          <input type="text" id="camera-name" placeholder="VD: Camera 1, Camera Cửa chính...">
+        </div>
+        <div class="form-group">
+          <label for="camera-type">Loại kết nối:</label>
+          <select id="camera-type">
+            <option value="whep">WHEP (WebRTC)</option>
+            <option value="rtsp">RTSP Stream</option>
+            <option value="hls">HLS Stream</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label for="camera-url">URL/Địa chỉ:</label>
+          <input type="text" id="camera-url" placeholder="VD: rtsp://192.168.1.100:554/stream hoặc http://localhost:8889/cam1/whep">
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label for="camera-username">Username (tùy chọn):</label>
+            <input type="text" id="camera-username" placeholder="Tên đăng nhập">
+          </div>
+          <div class="form-group">
+            <label for="camera-password">Password (tùy chọn):</label>
+            <input type="password" id="camera-password" placeholder="Mật khẩu">
+          </div>
+        </div>
+      </div>
+      <div class="modal-buttons">
+        <button id="cancel-add-btn" class="cancel-btn">Hủy</button>
+        <button id="save-camera-btn" class="save-btn">Thêm Camera</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Camera List Modal -->
+  <div id="camera-list-modal" class="modal" style="display: none;">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3>📋 Danh sách Camera</h3>
+        <button id="close-list-modal" class="close-btn">×</button>
+      </div>
+      <div class="modal-body">
+        <div id="camera-list-content">
+          <!-- Camera list will be populated here -->
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Settings Modal -->
+  <div id="settings-modal" class="modal" style="display: none;">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3>⚙️ Cài đặt</h3>
+        <button id="close-settings-modal" class="close-btn">×</button>
+      </div>
+      <div class="modal-body">
+        <div class="setting-item">
+          <label for="folder-select">Lưu trữ tự động (chỉ Chrome/Edge mới):</label>
+          <div class="folder-select-container">
+            <button id="folder-select-btn" class="folder-select-btn">Chọn thư mục</button>
+            <span id="folder-display" class="folder-display">Chưa chọn thư mục</span>
+          </div>
+          <small class="help-text">💡 Nếu không hỗ trợ, video sẽ tải về Downloads với tên file đã cấu hình</small>
+        </div>
+        <div class="setting-item">
+          <label for="filename-format">Định dạng tên file:</label>
+          <select id="filename-format">
+            <option value="datetime">camera-X-YYYY-MM-DD-HH-mm-ss</option>
+            <option value="timestamp">camera-X-timestamp</option>
+            <option value="simple">camera-X-video-N</option>
+          </select>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script type="module" src="./index.js"></script>
+
+</body>
+</html>

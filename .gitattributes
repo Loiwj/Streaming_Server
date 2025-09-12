@@ -1,0 +1,61 @@
+# Auto detect text files and perform LF normalization
+* text=auto
+
+# Custom for Visual Studio
+*.cs     diff=csharp
+*.sln    merge=union
+*.suo    binary
+*.user   binary
+*.useros binary
+*.sln.docstates binary
+
+# Custom for Visual Studio Code
+.vscode/*
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+
+# Custom for Web development
+*.html   text
+*.css    text
+*.js     text
+*.json   text
+*.md     text
+*.yml    text
+*.yaml   text
+
+# Media files
+*.mp4    binary
+*.avi    binary
+*.mov    binary
+*.mkv    binary
+*.webm   binary
+*.mp3    binary
+*.wav    binary
+*.png    binary
+*.jpg    binary
+*.jpeg   binary
+*.gif    binary
+*.ico    binary
+
+# Executable files
+*.exe    binary
+*.dll    binary
+*.so     binary
+*.dylib  binary
+
+# Archive files
+*.zip    binary
+*.tar    binary
+*.gz     binary
+*.rar    binary
+*.7z     binary
+
+# Database files
+*.db     binary
+*.sqlite binary
+*.sqlite3 binary
+
+# Log files
+*.log    text
