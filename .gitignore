@@ -151,3 +151,7 @@ pnpm-lock.yaml
 # Local development files
 .local
 local/
+
+# Face Recognition Models (too large for Git)
+face-recognition/models/
+*.onnx
