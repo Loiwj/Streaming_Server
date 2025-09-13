@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Face Recognition System - Streaming Server</title>
+  <link rel="stylesheet" href="face-recognition.css">
+</head>
+<body>
+  <div class="fr-container">
+    <!-- Header -->
+    <header class="fr-header">
+      <div class="header-content">
+        <h1>🎯 Face Recognition System</h1>
+        <nav class="header-nav">
+          <a href="index.html" class="nav-link">← Back to Camera Management</a>
+          <div class="fr-status" id="fr-system-status">
+            <span class="status-indicator" id="status-indicator"></span>
+            <span id="status-text">Initializing...</span>
+          </div>
+        </nav>
+      </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="fr-main">
+      <!-- Settings Panel -->
+      <section class="fr-section">
+        <div class="section-header">
+          <h2>⚙️ System Settings</h2>
+        </div>
+        <div class="settings-grid">
+          <div class="setting-item">
+            <label for="recognition-threshold">Recognition Threshold:</label>
+            <div class="threshold-control">
+              <input type="range" id="recognition-threshold" min="0.3" max="0.9" step="0.05" value="0.7">
+              <span class="threshold-value" id="threshold-value">0.70</span>
+            </div>
+            <small class="setting-help">Higher values = more strict recognition (fewer false positives)</small>
+          </div>
+          <div class="setting-item">
+            <label for="detection-confidence">Detection Confidence:</label>
+            <div class="threshold-control">
+              <input type="range" id="detection-confidence" min="0.3" max="0.9" step="0.05" value="0.5">
+              <span class="threshold-value" id="confidence-value">0.50</span>
+            </div>
+            <small class="setting-help">Minimum confidence to detect a face</small>
+          </div>
+          <div class="setting-item">
+            <button id="save-settings-btn" class="save-btn">Save Settings</button>
+          </div>
+        </div>
+      </section>
+
+      <!-- Monitoring Panel -->
+      <section class="fr-section">
+        <div class="section-header">
+          <h2>📹 Camera Monitoring</h2>
+        </div>
+        <div class="monitoring-panel">
+          <div class="monitoring-controls">
+            <div class="form-group">
+              <label for="monitor-camera">Select Camera:</label>
+              <select id="monitor-camera">
+                <option value="">Choose a camera...</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label for="monitor-interval">Scan Interval (seconds):</label>
+              <input type="number" id="monitor-interval" min="1" max="60" value="5">
+            </div>
+            <div class="monitoring-buttons">
+              <button id="start-monitoring-btn" class="start-btn">Start Monitoring</button>
+              <button id="stop-monitoring-btn" class="stop-btn" disabled>Stop Monitoring</button>
+            </div>
+          </div>
+          <div id="monitoring-status" class="monitoring-status"></div>
+        </div>
+      </section>
+
+      <!-- Two Column Layout -->
+      <div class="fr-columns">
+        <!-- Left Column: Known Faces -->
+        <section class="fr-section fr-column">
+          <div class="section-header">
+            <h2>👥 Known Faces Management</h2>
+          </div>
+          
+          <!-- Add/Edit Form -->
+          <div class="face-form-container">
+            <form id="face-form" class="face-form">
+              <div class="form-row">
+                <div class="form-group">
+                  <label for="face-name">Full Name *:</label>
+                  <input type="text" id="face-name" placeholder="Enter full name" required>
+                </div>
+                <div class="form-group">
+                  <label for="face-department">Department:</label>
+                  <input type="text" id="face-department" placeholder="e.g., IT, HR, Sales">
+                </div>
+              </div>
+              <div class="form-row">
+                <div class="form-group">
+                  <label for="face-position">Position:</label>
+                  <input type="text" id="face-position" placeholder="e.g., Manager, Developer">
+                </div>
+                <div class="form-group">
+                  <label for="face-email">Email:</label>
+                  <input type="email" id="face-email" placeholder="email@company.com">
+                </div>
+              </div>
+              <div class="form-row">
+                <div class="form-group">
+                  <label for="face-phone">Phone:</label>
+                  <input type="tel" id="face-phone" placeholder="Phone number">
+                </div>
+                <div class="form-group">
+                  <label for="face-image">Face Image *:</label>
+                  <input type="file" id="face-image" accept="image/*" required>
+                </div>
+              </div>
+              <div class="form-buttons">
+                <button type="submit" id="add-face-btn" class="save-btn">Add Known Face</button>
+                <button type="button" id="cancel-face-btn" class="cancel-btn" style="display: none;">Cancel</button>
+              </div>
+            </form>
+          </div>
+
+          <!-- Known Faces List -->
+          <div class="known-faces-container">
+            <div class="list-header">
+              <h3>Registered Users</h3>
+              <span id="faces-count" class="count-badge">0</span>
+            </div>
+            <div id="known-faces-list" class="known-faces-list">
+              <!-- Known faces will be populated here -->
+            </div>
+          </div>
+        </section>
+
+        <!-- Right Column: Logs & Snapshots -->
+        <section class="fr-section fr-column">
+          <div class="section-header">
+            <h2>📊 Detection Logs & Snapshots</h2>
+          </div>
+          
+          <!-- Tabs -->
+          <div class="fr-tabs">
+            <button class="fr-tab-btn active" data-tab="logs">Detection Logs</button>
+            <button class="fr-tab-btn" data-tab="snapshots">Snapshots</button>
+          </div>
+
+          <!-- Logs Tab -->
+          <div id="logs-tab" class="fr-tab-content active">
+            <div class="logs-controls">
+              <div class="form-group">
+                <label for="logs-camera">Camera:</label>
+                <select id="logs-camera">
+                  <option value="">All Cameras</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label for="logs-date">Date:</label>
+                <input type="date" id="logs-date">
+              </div>
+              <div class="logs-buttons">
+                <button id="load-logs-btn" class="load-btn">Load Logs</button>
+                <button id="auto-refresh-toggle" class="btn-warning">⏸️ Pause Auto-Refresh</button>
+              </div>
+              <div class="auto-refresh-status">
+                <span id="auto-refresh-status" class="status-on">🔄 Auto-refresh: ON</span>
+              </div>
+            </div>
+            <div id="detection-logs" class="detection-logs">
+              <!-- Logs will be populated here -->
+            </div>
+          </div>
+
+          <!-- Snapshots Tab -->
+          <div id="snapshots-tab" class="fr-tab-content">
+            <div class="snapshots-controls">
+              <button id="load-snapshots-btn" class="load-btn">Refresh Snapshots</button>
+            </div>
+            <div id="snapshots-gallery" class="snapshots-gallery">
+              <!-- Snapshots will be populated here -->
+            </div>
+          </div>
+        </section>
+      </div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="fr-footer">
+      <p>&copy; 2025 Face Recognition System - Powered by SCRFD + ArcFace</p>
+    </footer>
+  </div>
+
+  <!-- Notification -->
+  <div id="notification" class="notification"></div>
+
+  <script src="face-recognition.js"></script>
+</body>
+</html>

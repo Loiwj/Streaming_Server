@@ -117,8 +117,12 @@ class CameraManager {
       this.showCameraListModal();
     });
     
+    document.getElementById('face-recognition-btn').addEventListener('click', () => {
+      this.openFaceRecognitionPage();
+    });
+    
     document.getElementById('settings-btn').addEventListener('click', () => {
-      this.showSettingsModal();
+      this.openSettingsPage();
     });
     
     // Record history button
@@ -747,6 +751,16 @@ class CameraManager {
     document.getElementById('camera-list-modal').style.display = 'flex';
   }
   
+  openFaceRecognitionPage() {
+    // Open face recognition page in new tab
+    window.open('face-recognition.html', '_blank');
+  }
+  
+  openSettingsPage() {
+    // Open settings page in new tab
+    window.open('settings.html', '_blank');
+  }
+
   showSettingsModal() {
     // Update UI with current settings
     const folderDisplay = document.getElementById('folder-display');
@@ -1859,11 +1873,52 @@ class CameraManager {
   }
 }
 
-// Initialize the camera manager
-const cameraManager = new CameraManager();
+// Initialize camera manager when DOM is ready
+document.addEventListener('DOMContentLoaded', () => {
+  console.log('📄 DOM loaded, initializing CameraManager...');
+  
+  let cameraManager;
+  try {
+    cameraManager = new CameraManager();
+    console.log('✅ CameraManager created successfully');
+  } catch (error) {
+    console.error('❌ Error creating CameraManager:', error);
+  }
 
-// Make it globally accessible for onclick handlers
-window.cameraManager = cameraManager;
+  // Make it globally accessible for onclick handlers
+  window.cameraManager = cameraManager;
+  
+  // Global functions for onclick handlers
+  window.closeAddCameraModal = function() {
+    console.log('❌ Close add camera modal clicked (global function)');
+    const modal = document.getElementById('add-camera-modal');
+    if (modal) {
+      modal.style.display = 'none';
+      console.log('✅ Modal closed successfully');
+    } else {
+      console.error('❌ Modal not found');
+    }
+  };
+  
+  window.saveNewCamera = function() {
+    console.log('💾 Save new camera clicked (global function)');
+    try {
+      if (window.cameraManager) {
+        console.log('✅ CameraManager found, calling saveNewCamera...');
+        window.cameraManager.saveNewCamera().catch(error => {
+          console.error('❌ Error in saveNewCamera:', error);
+          alert('Lỗi khi lưu camera: ' + error.message);
+        });
+      } else {
+        console.error('❌ CameraManager not available');
+        alert('Lỗi: CameraManager không khả dụng. Vui lòng refresh trang.');
+      }
+    } catch (error) {
+      console.error('❌ Error in global saveNewCamera:', error);
+      alert('Lỗi: ' + error.message);
+    }
+  };
+});
 
 // Check MediaRecorder support
 if (!window.MediaRecorder) {

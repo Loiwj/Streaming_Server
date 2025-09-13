@@ -1,0 +1,315 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Camera Settings - Streaming Server</title>
+    <link rel="stylesheet" href="settings.css">
+</head>
+<body>
+    <div class="settings-container">
+        <!-- Header -->
+        <div class="settings-header">
+            <div class="header-left">
+                <a href="index.html" class="back-btn">← Quay lại</a>
+                <h1>⚙️ Cài đặt Camera</h1>
+            </div>
+            <div class="header-right">
+                <div class="system-status">
+                    <span id="status-indicator" class="status-indicator offline"></span>
+                    <span id="status-text">Đang kết nối...</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Settings Tabs -->
+        <div class="settings-tabs">
+            <button class="tab-btn active" data-tab="recording">📹 Ghi hình</button>
+            <button class="tab-btn" data-tab="motion">🎯 Phát hiện chuyển động</button>
+            <button class="tab-btn" data-tab="storage">💾 Lưu trữ</button>
+            <button class="tab-btn" data-tab="system">🔧 Hệ thống</button>
+        </div>
+
+        <!-- Recording Settings -->
+        <div id="recording-tab" class="tab-content active">
+            <div class="settings-section">
+                <h2>📹 Cài đặt ghi hình</h2>
+                
+                <div class="setting-group">
+                    <h3>Chế độ ghi hình</h3>
+                    <div class="radio-group">
+                        <label class="radio-option">
+                            <input type="radio" name="recording-mode" value="manual" checked>
+                            <span class="radio-custom"></span>
+                            <div class="option-content">
+                                <strong>Thủ công</strong>
+                                <small>Chỉ ghi khi người dùng nhấn nút</small>
+                            </div>
+                        </label>
+                        
+                        <label class="radio-option">
+                            <input type="radio" name="recording-mode" value="continuous">
+                            <span class="radio-custom"></span>
+                            <div class="option-content">
+                                <strong>Liên tục</strong>
+                                <small>Ghi hình 24/7 cho tất cả camera</small>
+                            </div>
+                        </label>
+                        
+                        <label class="radio-option">
+                            <input type="radio" name="recording-mode" value="motion">
+                            <span class="radio-custom"></span>
+                            <div class="option-content">
+                                <strong>Khi phát hiện chuyển động</strong>
+                                <small>Tự động ghi khi có chuyển động</small>
+                            </div>
+                        </label>
+                        
+                        <label class="radio-option">
+                            <input type="radio" name="recording-mode" value="scheduled">
+                            <span class="radio-custom"></span>
+                            <div class="option-content">
+                                <strong>Theo lịch</strong>
+                                <small>Ghi theo khung giờ đã định</small>
+                            </div>
+                        </label>
+                    </div>
+                </div>
+
+                <div class="setting-group">
+                    <h3>Chất lượng ghi hình</h3>
+                    <div class="form-group">
+                        <label for="video-quality">Chất lượng video:</label>
+                        <select id="video-quality">
+                            <option value="1080p">1080p (Full HD)</option>
+                            <option value="720p" selected>720p (HD)</option>
+                            <option value="480p">480p (SD)</option>
+                        </select>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="frame-rate">Tốc độ khung hình:</label>
+                        <select id="frame-rate">
+                            <option value="30">30 FPS</option>
+                            <option value="25" selected>25 FPS</option>
+                            <option value="15">15 FPS</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="setting-group">
+                    <h3>Thời gian ghi hình</h3>
+                    <div class="form-group">
+                        <label for="max-recording-time">Thời gian ghi tối đa (phút):</label>
+                        <input type="number" id="max-recording-time" value="60" min="1" max="1440">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="pre-motion-buffer">Ghi trước khi phát hiện (giây):</label>
+                        <input type="number" id="pre-motion-buffer" value="5" min="0" max="60">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="post-motion-buffer">Ghi sau khi phát hiện (giây):</label>
+                        <input type="number" id="post-motion-buffer" value="10" min="0" max="300">
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Motion Detection Settings -->
+        <div id="motion-tab" class="tab-content">
+            <div class="settings-section">
+                <h2>🎯 Phát hiện chuyển động</h2>
+                
+                <div class="setting-group">
+                    <h3>Cài đặt độ nhạy</h3>
+                    <div class="form-group">
+                        <label for="motion-sensitivity">Độ nhạy phát hiện:</label>
+                        <div class="slider-container">
+                            <input type="range" id="motion-sensitivity" min="1" max="100" value="50">
+                            <span id="sensitivity-value">50%</span>
+                        </div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="motion-threshold">Ngưỡng phát hiện:</label>
+                        <div class="slider-container">
+                            <input type="range" id="motion-threshold" min="1" max="100" value="30">
+                            <span id="threshold-value">30%</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="setting-group">
+                    <h3>Vùng phát hiện</h3>
+                    <div class="motion-zones">
+                        <div class="zone-controls">
+                            <button id="add-zone-btn" class="btn-secondary">+ Thêm vùng</button>
+                            <button id="clear-zones-btn" class="btn-secondary">Xóa tất cả</button>
+                        </div>
+                        <div id="motion-zones-list" class="zones-list">
+                            <!-- Motion zones will be populated here -->
+                        </div>
+                    </div>
+                </div>
+
+                <div class="setting-group">
+                    <h3>Lọc nhiễu</h3>
+                    <div class="form-group">
+                        <label class="checkbox-option">
+                            <input type="checkbox" id="ignore-small-movements" checked>
+                            <span class="checkbox-custom"></span>
+                            Bỏ qua chuyển động nhỏ
+                        </label>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="checkbox-option">
+                            <input type="checkbox" id="ignore-shadows" checked>
+                            <span class="checkbox-custom"></span>
+                            Bỏ qua bóng đổ
+                        </label>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="checkbox-option">
+                            <input type="checkbox" id="ignore-weather">
+                            <span class="checkbox-custom"></span>
+                            Bỏ qua thời tiết (mưa, gió)
+                        </label>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Storage Settings -->
+        <div id="storage-tab" class="tab-content">
+            <div class="settings-section">
+                <h2>💾 Quản lý lưu trữ</h2>
+                
+                <div class="setting-group">
+                    <h3>Thư mục lưu trữ</h3>
+                    <div class="form-group">
+                        <label for="storage-path">Đường dẫn lưu trữ:</label>
+                        <div class="path-input">
+                            <input type="text" id="storage-path" value="./recordings" readonly>
+                            <button id="browse-path-btn" class="btn-secondary">Duyệt</button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="setting-group">
+                    <h3>Quản lý dung lượng</h3>
+                    <div class="form-group">
+                        <label for="max-storage-size">Dung lượng tối đa (GB):</label>
+                        <input type="number" id="max-storage-size" value="100" min="1" max="1000">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="auto-delete-days">Tự động xóa sau (ngày):</label>
+                        <input type="number" id="auto-delete-days" value="30" min="1" max="365">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="checkbox-option">
+                            <input type="checkbox" id="auto-cleanup" checked>
+                            <span class="checkbox-custom"></span>
+                            Tự động dọn dẹp khi đầy dung lượng
+                        </label>
+                    </div>
+                </div>
+
+                <div class="setting-group">
+                    <h3>Thống kê lưu trữ</h3>
+                    <div class="storage-stats">
+                        <div class="stat-item">
+                            <span class="stat-label">Dung lượng đã sử dụng:</span>
+                            <span id="used-storage" class="stat-value">0 GB</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-label">Dung lượng còn lại:</span>
+                            <span id="free-storage" class="stat-value">0 GB</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-label">Số file ghi hình:</span>
+                            <span id="recording-count" class="stat-value">0</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- System Settings -->
+        <div id="system-tab" class="tab-content">
+            <div class="settings-section">
+                <h2>🔧 Cài đặt hệ thống</h2>
+                
+                <div class="setting-group">
+                    <h3>Hiệu suất</h3>
+                    <div class="form-group">
+                        <label for="cpu-usage">Giới hạn CPU (%):</label>
+                        <div class="slider-container">
+                            <input type="range" id="cpu-usage" min="10" max="100" value="80">
+                            <span id="cpu-value">80%</span>
+                        </div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="memory-usage">Giới hạn RAM (MB):</label>
+                        <input type="number" id="memory-usage" value="2048" min="512" max="8192">
+                    </div>
+                </div>
+
+                <div class="setting-group">
+                    <h3>Mạng</h3>
+                    <div class="form-group">
+                        <label for="stream-quality">Chất lượng stream:</label>
+                        <select id="stream-quality">
+                            <option value="high">Cao</option>
+                            <option value="medium" selected>Trung bình</option>
+                            <option value="low">Thấp</option>
+                        </select>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="max-connections">Số kết nối tối đa:</label>
+                        <input type="number" id="max-connections" value="10" min="1" max="50">
+                    </div>
+                </div>
+
+                <div class="setting-group">
+                    <h3>Bảo mật</h3>
+                    <div class="form-group">
+                        <label class="checkbox-option">
+                            <input type="checkbox" id="enable-auth">
+                            <span class="checkbox-custom"></span>
+                            Bật xác thực người dùng
+                        </label>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="checkbox-option">
+                            <input type="checkbox" id="enable-ssl">
+                            <span class="checkbox-custom"></span>
+                            Sử dụng HTTPS
+                        </label>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Action Buttons -->
+        <div class="settings-actions">
+            <button id="save-settings-btn" class="btn-primary">💾 Lưu cài đặt</button>
+            <button id="reset-settings-btn" class="btn-secondary">🔄 Đặt lại</button>
+            <button id="test-settings-btn" class="btn-secondary">🧪 Kiểm tra</button>
+        </div>
+
+        <!-- Status Messages -->
+        <div id="status-messages" class="status-messages"></div>
+    </div>
+
+    <script src="settings.js"></script>
+</body>
+</html>
