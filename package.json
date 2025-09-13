@@ -13,7 +13,7 @@
     }
   },
   "scripts": {
-    "dev": "parcel ./frontend/index.html --dist-dir dist-demo --host 0.0.0.0 --port 3000 --no-cache",
+    "dev": "parcel ./frontend/*.html --dist-dir dist-demo --host 0.0.0.0 --port 3000 --no-cache",
     "dev:backend": "node backend/server.js",
     "dev:mediamtx": "cd media-server && mediamtx.exe",
     "dev:full": "concurrently \"npm run dev:backend\" \"npm run dev:mediamtx\" \"npm run dev\"",
@@ -28,7 +28,11 @@
     "events": "^3.3.0",
     "express": "^4.18.2",
     "js-yaml": "^4.1.0",
-    "multer": "^2.0.2"
+    "multer": "^2.0.2",
+    "onnxruntime-node": "^1.16.3",
+    "node-fetch": "^2.7.0",
+    "sharp": "^0.32.6",
+    "jimp": "^0.22.10"
   },
   "devDependencies": {
     "@parcel/packager-ts": "^2.8.3",

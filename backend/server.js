@@ -4,9 +4,14 @@ const path = require('path');
 const yaml = require('js-yaml');
 const cors = require('cors');
 const multer = require('multer');
+const FaceRecognitionService = require('../face-recognition/FaceRecognitionService');
 
 const app = express();
 const PORT = 3001;
+
+// Initialize Face Recognition Service
+const faceRecognitionService = new FaceRecognitionService();
+let activeCameraMonitors = new Map(); // Track active camera monitoring
 
 // Middleware
 app.use(cors());
@@ -52,13 +57,32 @@ const fileFilter = (req, file, cb) => {
   }
 };
 
-// Configure multer
+// Configure multer for file uploads (disk storage)
 const upload = multer({
   storage: storage,
   limits: {
     fileSize: 100 * 1024 * 1024, // 100MB limit
   },
   fileFilter: fileFilter
+});
+
+// Configure multer for face recognition (memory storage)
+const faceUpload = multer({
+  storage: multer.memoryStorage(),
+  limits: {
+    fileSize: 10 * 1024 * 1024, // 10MB limit for face images
+  },
+  fileFilter: (req, file, cb) => {
+    const allowedTypes = /jpeg|jpg|png|gif/;
+    const extname = allowedTypes.test(path.extname(file.originalname).toLowerCase());
+    const mimetype = allowedTypes.test(file.mimetype);
+    
+    if (mimetype && extname) {
+      return cb(null, true);
+    } else {
+      cb(new Error('Only image files (jpeg, jpg, png, gif) are allowed for face recognition!'));
+    }
+  }
 });
 
 // Serve uploaded files statically
@@ -405,15 +429,405 @@ app.delete('/api/files/:type/:filename', async (req, res) => {
   }
 });
 
+// Face Recognition API Endpoints
+
+// Initialize face recognition service
+app.post('/api/face-recognition/initialize', async (req, res) => {
+  try {
+    await faceRecognitionService.initialize();
+    res.json({ success: true, message: 'Face Recognition Service initialized' });
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to initialize Face Recognition Service', details: error.message });
+  }
+});
+
+// Start face recognition monitoring for a camera
+app.post('/api/face-recognition/start/:cameraName', async (req, res) => {
+  try {
+    const { cameraName } = req.params;
+    const { intervalMs = 5000 } = req.body;
+    
+    // Stop existing monitoring if any
+    if (activeCameraMonitors.has(cameraName)) {
+      faceRecognitionService.stopCameraMonitoring(activeCameraMonitors.get(cameraName));
+    }
+    
+    // Build stream URL (remove /whep from the end)
+    const streamUrl = `http://localhost:8889/${cameraName}/`;
+    
+    // Start monitoring
+    const monitor = await faceRecognitionService.startCameraMonitoring(cameraName, streamUrl, intervalMs);
+    activeCameraMonitors.set(cameraName, monitor);
+    
+    res.json({ 
+      success: true, 
+      message: `Face recognition monitoring started for ${cameraName}`,
+      streamUrl: streamUrl,
+      intervalMs: intervalMs
+    });
+    
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to start face recognition monitoring', details: error.message });
+  }
+});
+
+// Stop face recognition monitoring for a camera
+app.post('/api/face-recognition/stop/:cameraName', (req, res) => {
+  try {
+    const { cameraName } = req.params;
+    
+    if (activeCameraMonitors.has(cameraName)) {
+      faceRecognitionService.stopCameraMonitoring(activeCameraMonitors.get(cameraName));
+      activeCameraMonitors.delete(cameraName);
+      
+      res.json({ success: true, message: `Face recognition monitoring stopped for ${cameraName}` });
+    } else {
+      res.status(404).json({ error: `No active monitoring found for ${cameraName}` });
+    }
+    
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to stop face recognition monitoring', details: error.message });
+  }
+});
+
+// Add known face
+app.post('/api/face-recognition/faces', faceUpload.single('image'), async (req, res) => {
+  try {
+    const { name, department, position, email, phone } = req.body;
+    
+    console.log('📥 Received add known face request:', { name, department, position, hasFile: !!req.file });
+    
+    if (!name || !req.file) {
+      return res.status(400).json({ error: 'Name and image file are required' });
+    }
+    
+    console.log('📁 File info:', {
+      originalname: req.file.originalname,
+      mimetype: req.file.mimetype,
+      size: req.file.size,
+      bufferLength: req.file.buffer?.length
+    });
+    
+    // Create user data object
+    const userData = {
+      name,
+      department: department || '',
+      position: position || '',
+      email: email || '',
+      phone: phone || ''
+    };
+    
+    const result = await faceRecognitionService.addKnownFace(userData, req.file.buffer);
+    res.json(result);
+    
+  } catch (error) {
+    console.error('❌ Error in add known face endpoint:', error);
+    res.status(500).json({ error: 'Failed to add known face', details: error.message });
+  }
+});
+
+// Remove known face
+app.delete('/api/face-recognition/faces/:name', async (req, res) => {
+  try {
+    const { name } = req.params;
+    const result = await faceRecognitionService.removeKnownFace(name);
+    res.json(result);
+    
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to remove known face', details: error.message });
+  }
+});
+
+// Get all known faces
+app.get('/api/face-recognition/faces', (req, res) => {
+  try {
+    const faces = faceRecognitionService.getKnownFaces();
+    res.json({ faces });
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to get known faces', details: error.message });
+  }
+});
+
+// Get user details by ID
+app.get('/api/face-recognition/faces/:userId', (req, res) => {
+  try {
+    const { userId } = req.params;
+    const user = faceRecognitionService.getUserById(userId);
+    
+    if (!user) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+    
+    res.json({ user });
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to get user details', details: error.message });
+  }
+});
+
+// Update user information
+app.put('/api/face-recognition/faces/:userId', async (req, res) => {
+  try {
+    const { userId } = req.params;
+    const { name, department, position, email, phone } = req.body;
+    
+    const updateData = {
+      name,
+      department,
+      position,
+      email,
+      phone
+    };
+    
+    // Remove undefined values
+    Object.keys(updateData).forEach(key => {
+      if (updateData[key] === undefined) {
+        delete updateData[key];
+      }
+    });
+    
+    const result = await faceRecognitionService.updateKnownFace(userId, updateData);
+    res.json(result);
+    
+  } catch (error) {
+    console.error('❌ Error updating user:', error);
+    res.status(500).json({ error: 'Failed to update user', details: error.message });
+  }
+});
+
+// Get face recognition logs
+app.get('/api/face-recognition/logs/:cameraName/:date?', async (req, res) => {
+  try {
+    const { cameraName, date } = req.params;
+    const targetDate = date || new Date().toISOString().split('T')[0];
+    
+    const logs = await faceRecognitionService.getLogs(cameraName, targetDate);
+    res.json({ logs, camera: cameraName, date: targetDate });
+    
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to get face recognition logs', details: error.message });
+  }
+});
+
+// Get snapshots list
+app.get('/api/face-recognition/snapshots', async (req, res) => {
+  try {
+    const snapshotsDir = path.join(__dirname, '../face-recognition/snapshots');
+    const files = await fs.readdir(snapshotsDir);
+    
+    const snapshots = files
+      .filter(file => file.endsWith('.jpg'))
+      .map(file => {
+        const parts = file.replace('.jpg', '').split('_');
+        return {
+          filename: file,
+          camera: parts[0],
+          timestamp: parts.slice(1, -2).join('_'),
+          identity: parts[parts.length - 2],
+          faceIndex: parts[parts.length - 1],
+          url: `/api/face-recognition/snapshots/${file}`
+        };
+      })
+      .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+    
+    res.json({ snapshots });
+    
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to get snapshots', details: error.message });
+  }
+});
+
+// Serve snapshot images
+app.get('/api/face-recognition/snapshots/:filename', (req, res) => {
+  try {
+    const { filename } = req.params;
+    const filePath = path.join(__dirname, '../face-recognition/snapshots', filename);
+    res.sendFile(path.resolve(filePath));
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to serve snapshot', details: error.message });
+  }
+});
+
+// Get active monitoring status
+app.get('/api/face-recognition/status', (req, res) => {
+  try {
+    const activeMonitoring = Array.from(activeCameraMonitors.keys());
+    res.json({ 
+      initialized: faceRecognitionService.isInitialized,
+      isInitialized: faceRecognitionService.isInitialized,
+      activeMonitoring: activeMonitoring,
+      knownFaces: faceRecognitionService.getKnownFaces().length,
+      knownFacesCount: faceRecognitionService.getKnownFaces().length
+    });
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to get status', details: error.message });
+  }
+});
+
+// Save face recognition settings
+app.post('/api/face-recognition/settings', async (req, res) => {
+  try {
+    const { recognitionThreshold, detectionConfidence } = req.body;
+    
+    if (recognitionThreshold !== undefined) {
+      faceRecognitionService.setRecognitionThreshold(recognitionThreshold);
+    }
+    
+    if (detectionConfidence !== undefined) {
+      faceRecognitionService.setDetectionConfidence(detectionConfidence);
+    }
+    
+    res.json({ 
+      success: true, 
+      message: 'Settings saved successfully',
+      settings: {
+        recognitionThreshold: faceRecognitionService.recognitionThreshold,
+        detectionConfidence: faceRecognitionService.detectionConfidence
+      }
+    });
+  } catch (error) {
+    console.error('❌ Error saving settings:', error);
+    res.status(500).json({ error: 'Failed to save settings', details: error.message });
+  }
+});
+
+// Settings API endpoints
+app.get('/api/settings', (req, res) => {
+  try {
+    // Return default settings for now
+    const defaultSettings = {
+      recording: {
+        mode: 'manual',
+        quality: '720p',
+        frameRate: 25,
+        maxRecordingTime: 60,
+        preMotionBuffer: 5,
+        postMotionBuffer: 10
+      },
+      motion: {
+        sensitivity: 50,
+        threshold: 30,
+        zones: [],
+        ignoreSmallMovements: true,
+        ignoreShadows: true,
+        ignoreWeather: false
+      },
+      storage: {
+        path: './recordings',
+        maxSize: 100,
+        autoDeleteDays: 30,
+        autoCleanup: true
+      },
+      system: {
+        cpuUsage: 80,
+        memoryUsage: 2048,
+        streamQuality: 'medium',
+        maxConnections: 10,
+        enableAuth: false,
+        enableSSL: false
+      }
+    };
+    
+    res.json(defaultSettings);
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to get settings', details: error.message });
+  }
+});
+
+app.post('/api/settings', (req, res) => {
+  try {
+    const settings = req.body;
+    console.log('💾 Settings saved:', JSON.stringify(settings, null, 2));
+    
+    // In a real implementation, you would save these to a file or database
+    res.json({ success: true, message: 'Settings saved successfully' });
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to save settings', details: error.message });
+  }
+});
+
+// Motion detection API endpoints
+app.post('/api/motion-detection/start', (req, res) => {
+  try {
+    const { sensitivity, threshold, zones, recordingSettings } = req.body;
+    
+    console.log('🎯 Starting motion detection with settings:', {
+      sensitivity,
+      threshold,
+      zones: zones.length,
+      recordingMode: recordingSettings.mode
+    });
+    
+    // In a real implementation, you would start motion detection here
+    // For now, just simulate success
+    res.json({ 
+      success: true, 
+      message: 'Motion detection started',
+      settings: { sensitivity, threshold, zones }
+    });
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to start motion detection', details: error.message });
+  }
+});
+
+app.post('/api/motion-detection/stop', (req, res) => {
+  try {
+    console.log('⏹️ Stopping motion detection');
+    
+    // In a real implementation, you would stop motion detection here
+    res.json({ success: true, message: 'Motion detection stopped' });
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to stop motion detection', details: error.message });
+  }
+});
+
+// Storage stats API
+app.get('/api/storage/stats', (req, res) => {
+  try {
+    // Simulate storage stats
+    const stats = {
+      used: 25.6,
+      free: 74.4,
+      recordingCount: 156
+    };
+    
+    res.json(stats);
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to get storage stats', details: error.message });
+  }
+});
+
+// System status API
+app.get('/api/status', (req, res) => {
+  try {
+    res.json({ 
+      online: true,
+      uptime: process.uptime(),
+      memory: process.memoryUsage(),
+      timestamp: new Date().toISOString()
+    });
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to get system status', details: error.message });
+  }
+});
+
 // Health check
 app.get('/api/health', (req, res) => {
   res.json({ status: 'OK', message: 'Camera management server is running' });
 });
 
 // Start server
-app.listen(PORT, () => {
+app.listen(PORT, async () => {
   console.log(`🚀 Camera management server running on http://localhost:${PORT}`);
   console.log(`📹 MediaMTX config path: ${MEDIAMTX_CONFIG_PATH}`);
+  
+  // Initialize Face Recognition Service on startup
+  try {
+    await faceRecognitionService.initialize();
+    console.log('🤖 Face Recognition Service initialized successfully');
+  } catch (error) {
+    console.warn('⚠️  Face Recognition Service initialization failed:', error.message);
+    console.warn('   Please ensure ONNX models are placed in face-recognition/models/ directory');
+  }
 });
 
 // Graceful shutdown
